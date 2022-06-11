@@ -1,0 +1,13 @@
+.announcements-list__item
+  = link_to edit_admin_role_path(role), class: 'announcements-list__item__title' do
+    - if role.everyone?
+      = t('admin.roles.everyone')
+    - else
+      = role.name
+
+  .announcements-list__item__action-bar
+    .announcements-list__item__meta
+      = role.permissions_as_hex
+
+    %div
+      = table_link_to 'trash', t('admin.roles.delete'), admin_role_path(role), method: :delete, data: { confirm: t('admin.accounts.are_you_sure') } if can?(:destroy, role)

@@ -37,6 +37,7 @@
 #  sign_in_token_sent_at     :datetime
 #  webauthn_id               :string
 #  sign_up_ip                :inet
+#  role_id                   :bigint(8)
 #
 
 class User < ApplicationRecord
@@ -50,7 +51,6 @@ class User < ApplicationRecord
   )
 
   include Settings::Extend
-  include UserRoles
   include Redisable
   include LanguagesHelper
 
@@ -79,6 +79,7 @@ class User < ApplicationRecord
   belongs_to :account, inverse_of: :user
   belongs_to :invite, counter_cache: :uses, optional: true
   belongs_to :created_by_application, class_name: 'Doorkeeper::Application', optional: true
+  belongs_to :role, class_name: 'UserRole', optional: true
   accepts_nested_attributes_for :account
 
   has_many :applications, class_name: 'Doorkeeper::Application', as: :owner
@@ -135,8 +136,28 @@ class User < ApplicationRecord
            :disable_swiping, :always_send_emails,
            to: :settings, prefix: :setting, allow_nil: false
 
+  delegate :can?, to: :role
+
   attr_reader :invite_code
   attr_writer :external, :bypass_invite_request_check
+
+  def self.those_who_can(*privileges)
+    matching_role_ids = UserRole.where('(permissions & ?) != 0', privileges.reduce(0) { |mask, privilege| mask | UserRole::FLAGS[privilege] }).pluck(:id)
+
+    if matching_role_ids.empty?
+      none
+    else
+      where(role_id: matching_role_ids)
+    end
+  end
+
+  def role
+    if role_id.nil?
+      UserRole.everyone
+    else
+      super
+    end
+  end
 
   def confirmed?
     confirmed_at.present?
@@ -453,7 +474,7 @@ class User < ApplicationRecord
   end
 
   def notify_staff_about_pending_account!
-    User.staff.includes(:account).find_each do |u|
+    User.those_who_can(:manage_users).includes(:account).find_each do |u|
       next unless u.allows_pending_account_emails?
       AdminMailer.new_pending_account(u.account, self).deliver_later
     end

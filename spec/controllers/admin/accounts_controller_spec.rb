@@ -6,7 +6,7 @@ RSpec.describe Admin::AccountsController, type: :controller do
   before { sign_in current_user, scope: :user }
 
   describe 'GET #index' do
-    let(:current_user) { Fabricate(:user, admin: true) }
+    let(:current_user) { Fabricate(:user, role: UserRole.find_by(name: 'Admin')) }
 
     around do |example|
       default_per_page = Account.default_per_page
@@ -60,7 +60,7 @@ RSpec.describe Admin::AccountsController, type: :controller do
   end
 
   describe 'GET #show' do
-    let(:current_user) { Fabricate(:user, admin: true) }
+    let(:current_user) { Fabricate(:user, role: UserRole.find_by(name: 'Admin')) }
     let(:account) { Fabricate(:account) }
 
     it 'returns http success' do

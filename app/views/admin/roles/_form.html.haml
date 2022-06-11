@@ -1,0 +1,17 @@
+= simple_form_for @role, url: @role.new_record? ? admin_roles_path : admin_role_path(@role) do |f|
+  = render 'shared/error_messages', object: @role
+
+  .fields-group
+    = f.input :name, wrapper: :with_label
+
+  .fields-group
+    = f.input :color, wrapper: :with_label
+
+  .fields-group
+    = f.input :position, wrapper: :with_label
+
+  .fields-group
+    = f.input :highlighted, wrapper: :with_label
+
+  .actions
+    = f.button :button, @role.new_record? ? t('admin.roles.add_new') : t('generic.save_changes'), type: :submit
